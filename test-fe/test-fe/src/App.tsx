@@ -7,6 +7,9 @@ const App: React.FC = () => {
   );
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<string[]>([]);
+  const [groupMessages, setGroupMessages] = useState<Record<string, string[]>>(
+    {}
+  );
 
   const [userId, setUserId] = useState("169ea051-e369-43d7-9494-31c32b16ae1d"); // your own ID
   const [receiverId, setReceiverId] = useState(
@@ -34,10 +37,14 @@ const App: React.FC = () => {
         });
 
         newConnection.on("ReceiveGroupMessage", (msg) => {
-          setMessages((prev) => [
-            ...prev,
-            `[Group:${msg.chatRoom}] ${msg.content}`,
-          ]);
+          const group = msg.chatRoom || "default";
+          setGroupMessages((prev) => {
+            const current = prev[group] || [];
+            return {
+              ...prev,
+              [group]: [...current, `[${msg.senderId}] ${msg.content}`],
+            };
+          });
         });
 
         // Auto join a room
@@ -73,8 +80,14 @@ const App: React.FC = () => {
         content: message,
       };
       await connection.invoke("SendMessageToGroup", chatRoom, dto);
-      setMessages((prev) => [...prev, `[To Group ${chatRoom}] ${message}`]);
-      setMessage("");
+
+      setGroupMessages((prev) => {
+        const current = prev[chatRoom] || [];
+        return {
+          ...prev,
+          [chatRoom]: [...current, `[You] ${message}`],
+        };
+      });
     }
   };
 
@@ -125,6 +138,18 @@ const App: React.FC = () => {
         {messages.map((m, i) => (
           <div key={i}>{m}</div>
         ))}
+        <h3>Group Messages for: {chatRoom}</h3>
+        <div
+          style={{
+            border: "1px solid gray",
+            padding: "10px",
+            minHeight: "150px",
+          }}
+        >
+          {groupMessages[chatRoom]?.map((m, i) => <div key={i}>{m}</div>) ?? (
+            <p>No messages in this group.</p>
+          )}
+        </div>
       </div>
     </div>
   );
