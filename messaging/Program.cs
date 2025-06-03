@@ -30,15 +30,19 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddControllers();
 
-
 builder.Services.AddCors(options =>
 {
     var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
-    options.AddPolicy("AllowFrontendAccess", builder => builder
-        .WithOrigins(!string.IsNullOrEmpty(frontendUrl) ? frontendUrl : "http://localhost:5173")
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials()
+    options.AddPolicy(
+        "AllowFrontendAccess",
+        builder =>
+            builder
+                .WithOrigins(
+                    !string.IsNullOrEmpty(frontendUrl) ? frontendUrl : "http://localhost:5173"
+                )
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials()
     );
 });
 
