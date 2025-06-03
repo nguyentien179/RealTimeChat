@@ -37,5 +37,18 @@ namespace messaging.Presentation.Controllers
             var messages = await _chatService.GetGroupMessagesAsync(chatRoom);
             return Ok(messages);
         }
+
+        [HttpGet("partners/{userId:guid}")]
+        public async Task<IActionResult> GetChatPartners(Guid userId)
+        {
+            var partners = await _chatService.GetChatPartnersAsync(userId);
+            return Ok(partners);
+        }
+        [HttpGet("groups/{userId:guid}")]
+        public async Task<IActionResult> GetUserGroups(Guid userId)
+        {
+            var groups = await _chatService.GetUserChatRoomsAsync(userId);
+            return Ok(groups);
+        }
     }
 }

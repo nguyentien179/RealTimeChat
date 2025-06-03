@@ -37,4 +37,27 @@ public class ChatRepository : IChatRepository
             .OrderBy(m => m.Timestamp)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<Guid>> GetChatPartnersAsync(Guid userId)
+    {
+        var sent = _context
+            .ChatMessages.Where(m => m.SenderId == userId && m.ReceiverId != null)
+            .Select(m => m.ReceiverId!.Value);
+
+        var received = _context
+            .ChatMessages.Where(m => m.ReceiverId == userId)
+            .Select(m => m.SenderId);
+
+        return await sent.Union(received).Distinct().ToListAsync();
+    }
+
+    public async Task<IEnumerable<string>> GetUserChatRoomsAsync(Guid userId)
+    {
+        return await _context.ChatMessages
+            .Where(m => m.SenderId == userId && m.ChatRoom != null)
+            .Select(m => m.ChatRoom!)
+            .Distinct()
+            .ToListAsync();
+    }
+
 }

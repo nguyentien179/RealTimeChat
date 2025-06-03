@@ -64,4 +64,13 @@ public class ChatService : IChatService
         var messages = await _chatRepository.GetGroupMessagesAsync(chatRoom);
         return messages.Select(ChatMapper.ToReturnDTO).ToList();
     }
+
+    public async Task<IEnumerable<Guid>> GetChatPartnersAsync(Guid userId)
+    {
+        return await _chatRepository.GetChatPartnersAsync(userId);
+    }
+    public async Task<IEnumerable<string>> GetUserChatRoomsAsync(Guid userId)
+    {
+        return await _chatRepository.GetUserChatRoomsAsync(userId);
+    }
 }
