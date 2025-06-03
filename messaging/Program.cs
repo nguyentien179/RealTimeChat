@@ -5,6 +5,7 @@ using messaging.Application.Services;
 using messaging.Domain.DTOs.Chat;
 using messaging.Hubs;
 using messaging.Infrastructure;
+using messaging.Infrastructure.Extension;
 using messaging.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.EntityFrameworkCore;
@@ -69,4 +70,5 @@ app.MapHub<ChatHub>(
         options.TransportMaxBufferSize = 64 * 1024;
     }
 );
+app.MigrateDb();
 app.Run();
