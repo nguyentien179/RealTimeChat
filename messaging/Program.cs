@@ -30,6 +30,18 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddControllers();
 
+
+builder.Services.AddCors(options =>
+{
+    var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
+    options.AddPolicy("AllowFrontendAccess", builder => builder
+        .WithOrigins(!string.IsNullOrEmpty(frontendUrl) ? frontendUrl : "http://localhost:5173")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials()
+    );
+});
+
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = true;
@@ -37,15 +49,18 @@ builder.Services.AddSignalR(options =>
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
     options.HandshakeTimeout = TimeSpan.FromSeconds(15);
 });
-
 builder.Services.AddCors(options =>
 {
+    // var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
     options.AddPolicy(
         "AllowFrontendAccess",
         builder =>
         {
             builder
-                .WithOrigins("http://localhost:5173")
+                .WithOrigins(
+                    // !string.IsNullOrEmpty(frontendUrl) ? frontendUrl :
+                    "http://localhost:5173"
+                )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
@@ -80,6 +95,8 @@ if (app.Environment.IsDevelopment())
 }
 app.UseCors("AllowFrontendAccess");
 
+app.MapOpenApi();
+
 app.UseHttpsRedirection();
 app.MapControllers();
 
@@ -104,4 +121,5 @@ app.MapHub<ChatHub>(
 );
 
 app.MigrateDb();
-app.Run();
+
+await app.RunAsync();

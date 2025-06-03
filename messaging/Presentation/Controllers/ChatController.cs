@@ -1,25 +1,13 @@
 using messaging.Application.Interfaces;
-using messaging.Application.Mappers;
-using messaging.Domain.DTOs.Chat;
-using messaging.Domain.Entity;
-using messaging.Hubs;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 
 namespace messaging.Presentation.Controllers
 {
     [Route("chat")]
     [ApiController]
-    public class ChatController : ControllerBase
+    public class ChatController(IChatService chatService) : ControllerBase
     {
-        private readonly IChatService _chatService;
-
-        public ChatController(IChatService chatService)
-        {
-            _chatService = chatService;
-        }
+        private readonly IChatService _chatService = chatService;
 
         [HttpGet("private")]
         public async Task<IActionResult> GetPrivateMessages(

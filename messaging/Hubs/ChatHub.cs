@@ -1,20 +1,12 @@
-using System;
 using messaging.Application.Interfaces;
 using messaging.Domain.DTOs.Chat;
-using messaging.Domain.Entity;
-using messaging.Domain.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace messaging.Hubs;
 
-public class ChatHub : Hub
+public class ChatHub(IChatService chatService) : Hub
 {
-    private readonly IChatService _chatService;
-
-    public ChatHub(IChatService chatService)
-    {
-        _chatService = chatService;
-    }
+    private readonly IChatService _chatService = chatService;
 
     // Save to DB and broadcast to receiver
     public async Task SendMessageToUser(string receiverUserId, MessageToSendDTO message)
@@ -39,15 +31,5 @@ public class ChatHub : Hub
     public async Task LeaveRoom(string room)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, room);
-    }
-
-    public override Task OnConnectedAsync()
-    {
-        return base.OnConnectedAsync();
-    }
-
-    public override Task OnDisconnectedAsync(Exception? exception)
-    {
-        return base.OnDisconnectedAsync(exception);
     }
 }
