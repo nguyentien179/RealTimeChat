@@ -21,13 +21,6 @@ namespace messaging.Presentation.Controllers
             _chatService = chatService;
         }
 
-        [HttpPost("send")]
-        public async Task<IActionResult> SendMessage([FromBody] MessageToSendDTO messageDto)
-        {
-            var result = await _chatService.SaveMessageAsync(messageDto);
-            return Ok(result);
-        }
-
         [HttpGet("private")]
         public async Task<IActionResult> GetPrivateMessages(
             [FromQuery] Guid user1,

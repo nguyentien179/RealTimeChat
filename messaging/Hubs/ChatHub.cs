@@ -16,14 +16,19 @@ public class ChatHub : Hub
         _chatService = chatService;
     }
 
-    public async Task SendMessageToUser(string receiverUserId, MessageToReturnDTO message)
+    // Save to DB and broadcast to receiver
+    public async Task SendMessageToUser(string receiverUserId, MessageToSendDTO message)
     {
-        await Clients.User(receiverUserId).SendAsync("ReceiveMessage", message);
+        // Receiver is set via parameter, assign it to the message
+        message.ReceiverId = Guid.Parse(receiverUserId);
+        await _chatService.SaveMessageAsync(message);
     }
 
-    public async Task SendMessageToGroup(string chatRoom, MessageToReturnDTO message)
+    // Save to DB and broadcast to group
+    public async Task SendMessageToGroup(string chatRoom, MessageToSendDTO message)
     {
-        await Clients.Group(chatRoom).SendAsync("ReceiveGroupMessage", message);
+        message.ChatRoom = chatRoom;
+        await _chatService.SaveMessageAsync(message);
     }
 
     public async Task JoinRoom(string room)
@@ -38,13 +43,11 @@ public class ChatHub : Hub
 
     public override Task OnConnectedAsync()
     {
-        // Optional: log or manage connection
         return base.OnConnectedAsync();
     }
 
     public override Task OnDisconnectedAsync(Exception? exception)
     {
-        // Optional: cleanup
         return base.OnDisconnectedAsync(exception);
     }
 }
