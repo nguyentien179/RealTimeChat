@@ -14,30 +14,24 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+
+builder.Services.AddCors(options =>
+{
+    var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
+    options.AddPolicy("AllowFrontendAccess", builder => builder
+        .WithOrigins(!string.IsNullOrEmpty(frontendUrl) ? frontendUrl : "http://localhost:5173")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials()
+    );
+});
+
 builder.Services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = true;
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
     options.HandshakeTimeout = TimeSpan.FromSeconds(15);
-});
-builder.Services.AddCors(options =>
-{
-    // var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
-    options.AddPolicy(
-        "AllowFrontendAccess",
-        builder =>
-        {
-            builder
-                .WithOrigins(
-                    // !string.IsNullOrEmpty(frontendUrl) ? frontendUrl :
-                    "http://localhost:5173"
-                )
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials();
-        }
-    );
 });
 
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
@@ -52,11 +46,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
 app.UseCors("AllowFrontendAccess");
+
+app.MapOpenApi();
 app.MapControllers();
 app.UseHttpsRedirection();
 
@@ -70,5 +62,7 @@ app.MapHub<ChatHub>(
         options.TransportMaxBufferSize = 64 * 1024;
     }
 );
+
 app.MigrateDb();
-app.Run();
+
+await app.RunAsync();
