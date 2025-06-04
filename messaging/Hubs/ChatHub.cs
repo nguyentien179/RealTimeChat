@@ -1,35 +1,33 @@
 using messaging.Application.Interfaces;
 using messaging.Domain.DTOs.Chat;
+using messaging.Domain.DTOs.ChatRoom;
 using Microsoft.AspNetCore.SignalR;
 
 namespace messaging.Hubs;
 
-public class ChatHub(IChatService chatService) : Hub
+public class ChatHub(IChatService chatService, IChatRoomService chatRoomService) : Hub
 {
     private readonly IChatService _chatService = chatService;
+    private readonly IChatRoomService _chatRoomService = chatRoomService;
 
     // Save to DB and broadcast to receiver
-    public async Task SendMessageToUser(string receiverUserId, MessageToSendDTO message)
+    public async Task SendMessage(MessageToSendDTO message)
     {
-        // Receiver is set via parameter, assign it to the message
-        message.ReceiverId = Guid.Parse(receiverUserId);
         await _chatService.SaveMessageAsync(message);
     }
 
-    // Save to DB and broadcast to group
-    public async Task SendMessageToGroup(string chatRoom, MessageToSendDTO message)
+    public async Task AddToRoom(AddUserToRoomDTO addUserToRoomDTO)
     {
-        message.ChatRoom = chatRoom;
-        await _chatService.SaveMessageAsync(message);
+        await _chatRoomService.AddUsersToChatRoomAsync(addUserToRoomDTO);
     }
 
-    public async Task JoinRoom(string room)
+    public async Task LeaveRoom(Guid roomId, Guid userId)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, room);
+        await _chatRoomService.LeaveChatRoomAsync(roomId, userId);
     }
 
-    public async Task LeaveRoom(string room)
+    public async Task KickUserFromRoom(Guid roomId, Guid userIdToKick)
     {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, room);
+        await _chatRoomService.KickUserFromRoomAsync(roomId, userIdToKick);
     }
 }

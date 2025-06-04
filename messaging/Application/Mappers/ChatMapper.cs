@@ -13,7 +13,7 @@ public static class ChatMapper
             Id = Guid.NewGuid(),
             SenderId = dto.SenderId,
             ReceiverId = dto.ReceiverId,
-            ChatRoom = dto.ChatRoom,
+            ChatRoomId = dto.ChatRoomId,
             Content = dto.Content,
             Timestamp = DateTime.UtcNow
         };
@@ -26,9 +26,10 @@ public static class ChatMapper
             Id = message.Id,
             SenderId = message.SenderId,
             ReceiverId = message.ReceiverId,
-            ChatRoom = message.ChatRoom,
+            ChatRoomId = message.ChatRoomId,
+            ChatRoomName = message.ChatRoom?.Name,
             Content = message.Content,
-            Timestamp = message.Timestamp
+            Timestamp = message.Timestamp,
         };
     }
 }

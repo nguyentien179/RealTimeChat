@@ -73,8 +73,9 @@ builder.Services.AddCors(options =>
 });
 
 // Services & Repositories
-builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IChatRoomService, ChatRoomService>();
 
 // Validation
 builder.Services.AddValidatorsFromAssemblyContaining<MessageToSendDTOValidator>();

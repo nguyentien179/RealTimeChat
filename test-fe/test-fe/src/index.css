@@ -109,14 +109,25 @@ body {
   background: #f9f9f9;
   border-radius: 8px;
 }
-
 .message {
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  max-width: 80%;
+  margin: 8px;
+  padding: 8px;
+  border-radius: 4px;
 }
 
+.private-message {
+  border-left: 3px solid #ff9800;
+}
+
+.group-message {
+  border-left: 3px solid #4caf50;
+}
+
+.message-info {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 4px;
+}
 .message-list-container {
   display: flex;
   flex-direction: column;
