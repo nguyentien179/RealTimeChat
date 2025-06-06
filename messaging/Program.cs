@@ -53,24 +53,6 @@ builder.Services.AddSignalR(options =>
     options.KeepAliveInterval = TimeSpan.FromSeconds(15);
     options.HandshakeTimeout = TimeSpan.FromSeconds(15);
 });
-builder.Services.AddCors(options =>
-{
-    // var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
-    options.AddPolicy(
-        "AllowFrontendAccess",
-        builder =>
-        {
-            builder
-                .WithOrigins(
-                    // !string.IsNullOrEmpty(frontendUrl) ? frontendUrl :
-                    "http://localhost:5173"
-                )
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials();
-        }
-    );
-});
 
 // Services & Repositories
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
@@ -89,15 +71,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 var app = builder.Build();
 
 // Swagger UI
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Messaging API v1");
-        options.RoutePrefix = string.Empty;
-    });
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Messaging API v1");
+    options.RoutePrefix = string.Empty;
+});
+
 app.UseCors("AllowFrontendAccess");
 
 app.MapOpenApi();
