@@ -10,6 +10,7 @@ using messaging.Domain.Entity;
 using messaging.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using static messaging.Application.Mappers.ChatRoomMapper;
 
 namespace messaging.Application.Services;
 
@@ -135,44 +136,36 @@ public class ChatRoomService : IChatRoomService
         return chatRoom.ToDTO();
     }
 
-    public async Task<ChatRoomToReturnDTO> GetChatRoomByIdAsync(
+    public async Task<PagedResponse<ChatRoomToReturnDTO>> GetChatRoomByIdAsync(
         Guid chatRoomId,
         int pageNumber,
         int pageSize
     )
     {
-        var chatRoom =
-            await _chatRoomRepository.GetByIdAsync(
-                chatRoomId,
-                c => c.Include(r => r.Users).Include(m => m.Messages)
-            ) ?? throw new Exception("Chat room not found");
-
-        var userIds = chatRoom.Users.Select(u => u.UserId).ToList();
-
-        var totalMessages = chatRoom.Messages.Count;
-        var pagedMessages = chatRoom
-            .Messages.OrderByDescending(m => m.Timestamp)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .Select(m => m.ToReturnDTO())
-            .ToList();
-
-        return new ChatRoomToReturnDTO
+        var filters = new List<Expression<Func<ChatRoom, bool>>>
         {
-            Id = chatRoom.Id,
-            Name = chatRoom.Name,
-            UserIds = userIds,
-            Messages = new PagedResponse<MessageToReturnDTO>
-            {
-                Items = pagedMessages,
-                PageIndex = pageNumber,
-                PageSize = pageSize,
-                TotalRecords = totalMessages,
-                TotalPages = (int)Math.Ceiling((double)totalMessages / pageSize),
-                HasPreviousPage = pageNumber > 1,
-                HasNextPage = pageNumber < (int)Math.Ceiling((double)totalMessages / pageSize)
-            }
+            c => c.Id == chatRoomId
+        };
+        var pagedResult = await _chatRoomRepository.GetAllAsync(
+            pageNumber,
+            pageSize,
+            filters,
+            orderBy: cr => cr.OrderByDescending(cr => cr.Messages.Max(m => m.Timestamp)),
+            c => c.Include(c => c.Users).Include(c => c.Messages)
+        );
+
+        // Filter out null ChatRooms and map to DTOs
+        var items = pagedResult.Items.Select(room => room.ToDTO()).ToList();
+
+        return new PagedResponse<ChatRoomToReturnDTO>
+        {
+            Items = items,
+            PageIndex = pageNumber,
+            PageSize = pageSize,
+            TotalRecords = pagedResult.TotalRecords,
+            TotalPages = pagedResult.TotalPages,
+            HasNextPage = pagedResult.HasNextPage,
+            HasPreviousPage = pagedResult.HasPreviousPage
         };
     }
-
 }

@@ -9,5 +9,5 @@ public class ChatRoomToReturnDTO
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public List<Guid> UserIds { get; set; } = new List<Guid>();
-    public PagedResponse<MessageToReturnDTO>? Messages { get; set; }
+    public PagedResponse<MessageToReturnDTO> Messages { get; set; } = new PagedResponse<MessageToReturnDTO>();
 }

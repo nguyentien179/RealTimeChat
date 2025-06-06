@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace messaging.Infrastucture.Migrations
+namespace messaging.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class Second : Migration

@@ -9,7 +9,7 @@ using messaging.Infrastructure;
 
 #nullable disable
 
-namespace messaging.Infrastucture.Migrations
+namespace messaging.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     [Migration("20250604085926_Second")]

@@ -10,7 +10,6 @@ public static class ChatRoomMapper
 {
     public static ChatRoomToReturnDTO ToDTO(this ChatRoom room, PagingParameters? paging = null)
     {
-        // Return empty DTO if room is null
         if (room == null)
         {
             return new ChatRoomToReturnDTO
