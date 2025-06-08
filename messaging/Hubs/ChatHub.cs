@@ -1,10 +1,12 @@
 using messaging.Application.Interfaces;
 using messaging.Domain.DTOs.Chat;
 using messaging.Domain.DTOs.ChatRoom;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
 namespace messaging.Hubs;
 
+[Authorize]
 public class ChatHub(IChatService chatService, IChatRoomService chatRoomService) : Hub
 {
     private readonly IChatService _chatService = chatService;

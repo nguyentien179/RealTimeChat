@@ -21,4 +21,9 @@ public interface IChatService
         int page,
         int pageSize
     );
+    Task<PagedResponse<ConversationDTO>> GetUserConversationsAsync(
+        Guid userId,
+        int pageNumber,
+        int pageSize
+    );
 }

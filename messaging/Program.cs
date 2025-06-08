@@ -1,3 +1,4 @@
+using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using messaging.Application.Interfaces;
@@ -7,8 +8,11 @@ using messaging.Hubs;
 using messaging.Infrastructure;
 using messaging.Infrastructure.Extension;
 using messaging.Infrastructure.Repositories;
+using messaging.Infrastructure.Settings;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,24 +31,9 @@ builder.Services.AddSwaggerGen(options =>
         }
     );
 });
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
 builder.Services.AddControllers();
-
-builder.Services.AddCors(options =>
-{
-    var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
-    options.AddPolicy(
-        "AllowFrontendAccess",
-        builder =>
-            builder
-                .WithOrigins(
-                    !string.IsNullOrEmpty(frontendUrl) ? frontendUrl : "http://localhost:5173"
-                )
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials()
-    );
-});
 
 builder.Services.AddSignalR(options =>
 {
@@ -55,22 +44,40 @@ builder.Services.AddSignalR(options =>
 });
 builder.Services.AddCors(options =>
 {
-    // var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
     options.AddPolicy(
         "AllowFrontendAccess",
         builder =>
-        {
             builder
-                .WithOrigins(
-                    // !string.IsNullOrEmpty(frontendUrl) ? frontendUrl :
-                    "http://localhost:5173"
-                )
+                .WithOrigins("http://localhost:5173")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
-                .AllowCredentials();
-        }
+                .AllowCredentials()
+                .WithExposedHeaders("WWW-Authenticate")
     );
 });
+
+builder
+    .Services.AddAuthentication("Bearer")
+    .AddJwtBearer(
+        "Bearer",
+        options =>
+        {
+            var jwtSettings =
+                builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
+                ?? throw new Exception("No JWT Settings");
+
+            var key = jwtSettings.SecretKey;
+
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!)),
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = true
+            };
+        }
+    );
 
 // Services & Repositories
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
@@ -98,11 +105,12 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = string.Empty;
     });
 }
-app.UseCors("AllowFrontendAccess");
-
-app.MapOpenApi();
 
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontendAccess");
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapOpenApi();
 app.MapControllers();
 
 app.MapGet(
@@ -118,7 +126,7 @@ app.MapHub<ChatHub>(
     "/chatHub",
     options =>
     {
-        options.Transports = HttpTransportType.WebSockets;
+        options.Transports = HttpTransportType.LongPolling;
         options.CloseOnAuthenticationExpiration = true;
         options.ApplicationMaxBufferSize = 64 * 1024;
         options.TransportMaxBufferSize = 64 * 1024;

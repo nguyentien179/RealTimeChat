@@ -7,7 +7,7 @@ using messaging.Application.Mappers;
 using messaging.Domain.DTOs.Chat;
 using messaging.Domain.DTOs.ChatRoom;
 using messaging.Domain.Entity;
-using messaging.Domain.Models;
+using messaging.Domain.Enum;
 using messaging.Hubs;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -187,6 +187,67 @@ public class ChatService : IChatService
             TotalPages = pagedResult.TotalPages,
             HasNextPage = pagedResult.HasNextPage,
             HasPreviousPage = pagedResult.HasPreviousPage
+        };
+    }
+
+    public async Task<PagedResponse<ConversationDTO>> GetUserConversationsAsync(
+        Guid userId,
+        int pageNumber,
+        int pageSize
+    )
+    {
+        var result = new List<ConversationDTO>();
+
+        var partnerIds = await GetChatPartnersAsync(userId, pageNumber, pageSize);
+
+        foreach (var partnerId in partnerIds.Items)
+        {
+            var privateMessages = await GetPrivateMessagesAsync(userId, partnerId, 1, 1);
+            var lastMessage = privateMessages.Items.FirstOrDefault();
+            result.Add(
+                new ConversationDTO
+                {
+                    Type = ConversationType.Private,
+                    Id = partnerId,
+                    Name = string.Empty,
+                    LastMessage = lastMessage?.Content ?? string.Empty,
+                    Avatar = string.Empty,
+                    Timestamp = lastMessage?.Timestamp ?? DateTime.MinValue,
+                }
+            );
+        }
+
+        var groupChats = await GetUserChatRoomsAsync(userId, pageNumber, pageSize);
+
+        foreach (var chatRoom in groupChats.Items)
+        {
+            var lastMessage = chatRoom.Messages.Items.FirstOrDefault();
+            result.Add(
+                new ConversationDTO
+                {
+                    Type = ConversationType.Group,
+                    Id = chatRoom.Id,
+                    Name = chatRoom.Name,
+                    LastMessage = lastMessage?.Content ?? string.Empty,
+                    Avatar = string.Empty,
+                    Timestamp = lastMessage?.Timestamp ?? DateTime.MinValue,
+                }
+            );
+        }
+
+        // Sort by Timestamp DESC
+        result = result.OrderByDescending(c => c.Timestamp).ToList();
+        Console.WriteLine(result.Count);
+
+        // Pagination
+        var totalCount = result.Count;
+        var pagedItems = result.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+        return new PagedResponse<ConversationDTO>
+        {
+            Items = pagedItems,
+            PageIndex = pageNumber,
+            PageSize = pageSize,
+            TotalRecords = totalCount
         };
     }
 }
