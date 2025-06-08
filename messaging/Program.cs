@@ -96,8 +96,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 var app = builder.Build();
 
 // Swagger UI
-app.UseSwagger();
-app.UseSwaggerUI(options =>
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>
@@ -106,9 +105,6 @@ app.UseSwaggerUI(options =>
         options.RoutePrefix = string.Empty;
     });
 }
-);
-
-
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontendAccess");
@@ -116,6 +112,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapOpenApi();
 app.MapControllers();
+
 app.MapGet(
     "/",
     context =>
