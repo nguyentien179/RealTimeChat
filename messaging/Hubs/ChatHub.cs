@@ -32,4 +32,10 @@ public class ChatHub(IChatService chatService, IChatRoomService chatRoomService)
     {
         await _chatRoomService.KickUserFromRoomAsync(roomId, userIdToKick);
     }
+    public override Task OnConnectedAsync()
+    {
+        var userId = Context.UserIdentifier;
+        Console.WriteLine($"Client connected: ConnectionId={Context.ConnectionId}, UserId={userId}");
+        return base.OnConnectedAsync();
+    }
 }

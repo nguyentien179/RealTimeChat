@@ -49,31 +49,14 @@ public class ChatService : IChatService
             // Group message
             await _hubContext
                 .Clients.Group(message.ChatRoomId.Value.ToString())
-                .SendAsync(
-                    "ReceiveGroupMessage",
-                    new
-                    {
-                        Message = message.Content,
-                        Sender = message.SenderId,
-                        RoomId = message.ChatRoomId,
-                        Timestamp = DateTime.UtcNow,
-                    }
-                );
+                .SendAsync("ReceiveMessage", entity.ToReturnDTO());
         }
         else if (message.ReceiverId.HasValue)
         {
             // Private message
             await _hubContext
                 .Clients.User(message.ReceiverId.Value.ToString())
-                .SendAsync(
-                    "ReceiveMessage",
-                    new
-                    {
-                        Message = message.Content,
-                        Sender = message.SenderId,
-                        Timestamp = DateTime.UtcNow,
-                    }
-                );
+                .SendAsync("ReceiveMessage", entity.ToReturnDTO());
         }
 
         return entity.ToReturnDTO();
