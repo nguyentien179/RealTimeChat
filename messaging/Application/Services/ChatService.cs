@@ -65,7 +65,7 @@ public class ChatService : IChatService
     public Task<PagedResponse<MessageToReturnDTO>> GetPrivateMessagesAsync(
         Guid user1,
         Guid user2,
-        int page,
+        int pageIndex,
         int pageSize
     )
     {
@@ -76,7 +76,7 @@ public class ChatService : IChatService
                 || (m.SenderId == user2 && m.ReceiverId == user1)
         };
 
-        return CreatePagedMessageResponse(filters, page, pageSize);
+        return CreatePagedMessageResponse(filters, pageIndex, pageSize);
     }
 
     public async Task<PagedResponse<Guid>> GetChatPartnersAsync(Guid userId, int page, int pageSize)
@@ -150,12 +150,12 @@ public class ChatService : IChatService
 
     private async Task<PagedResponse<MessageToReturnDTO>> CreatePagedMessageResponse(
         List<Expression<Func<ChatMessage, bool>>> filters,
-        int page,
+        int pageIndex,
         int pageSize
     )
     {
         var pagedResult = await _chatRepository.GetAllAsync(
-            page,
+            pageIndex,
             pageSize,
             filters,
             m => m.OrderByDescending(m => m.Timestamp)
@@ -163,7 +163,7 @@ public class ChatService : IChatService
 
         return new PagedResponse<MessageToReturnDTO>
         {
-            Items = pagedResult.Items.Select(m => m.ToReturnDTO()),
+            Items = pagedResult.Items.OrderBy(m => m.Timestamp).Select(m => m.ToReturnDTO()),
             PageIndex = pagedResult.PageIndex,
             PageSize = pagedResult.PageSize,
             TotalRecords = pagedResult.TotalRecords,

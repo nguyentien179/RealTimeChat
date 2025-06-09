@@ -1,3 +1,4 @@
+using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using messaging.Application;
@@ -14,7 +15,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,12 +48,17 @@ builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 builder.Services.AddCors(options =>
 {
     var frontendUrl = builder.Configuration.GetValue<string>("FrontendUrl");
-    options.AddPolicy("AllowFrontendAccess", builder => builder
-        .WithOrigins(!string.IsNullOrEmpty(frontendUrl) ? frontendUrl : "http://localhost:5173")
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials()
-        .WithExposedHeaders("WWW-Authenticate")
+    options.AddPolicy(
+        "AllowFrontendAccess",
+        builder =>
+            builder
+                .WithOrigins(
+                    !string.IsNullOrEmpty(frontendUrl) ? frontendUrl : "http://localhost:5173"
+                )
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials()
+                .WithExposedHeaders("WWW-Authenticate")
     );
 });
 

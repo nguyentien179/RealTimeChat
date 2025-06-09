@@ -49,11 +49,14 @@ public class GenericRepository<T> : IGenericRepository<T>
                 : (IOrderedQueryable<T>)query.OrderBy(x => EF.Property<object>(x, "Id"));
 
         var totalRecords = await query.CountAsync();
+        if (pageSize <= 0)
+        {
+            pageSize = 5; // default page size
+        }
 
-        if (pageIndex == 0 || pageSize == 0)
+        if (pageIndex <= 0 || pageIndex == null)
         {
             pageIndex = 1;
-            pageSize = 5;
         }
 
         var items = await query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
