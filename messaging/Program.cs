@@ -3,6 +3,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using messaging.Application;
 using messaging.Application.Interfaces;
+using messaging.Application.Middleware;
 using messaging.Application.Services;
 using messaging.Domain.DTOs.Chat;
 using messaging.Hubs;
@@ -100,8 +101,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 );
 
 var app = builder.Build();
-
+app.UseMiddleware<ErrorHandlerMiddleware>();
 app.UseSwagger();
+
 app.UseSwaggerUI(options =>
 {
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "Messaging API v1");
