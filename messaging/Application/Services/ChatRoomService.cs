@@ -142,10 +142,7 @@ public class ChatRoomService : IChatRoomService
         int pageSize
     )
     {
-        var filters = new List<Expression<Func<ChatRoom, bool>>>
-        {
-            c => c.Id == chatRoomId
-        };
+        var filters = new List<Expression<Func<ChatRoom, bool>>> { c => c.Id == chatRoomId };
         var pagedResult = await _chatRoomRepository.GetAllAsync(
             pageNumber,
             pageSize,

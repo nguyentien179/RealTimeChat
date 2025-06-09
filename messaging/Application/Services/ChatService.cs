@@ -86,27 +86,29 @@ public class ChatService : IChatService
             m => (m.SenderId == userId && m.ReceiverId != null) || m.ReceiverId == userId
         };
 
-        var pagedResult = await _chatRepository.GetAllAsync(
-            page,
-            pageSize,
+        var allMessages = await _chatRepository.GetAllAsync(
+            1,
+            int.MaxValue, // Get all messages (or optimize this with a proper query)
             filters,
             m => m.OrderByDescending(m => m.Timestamp)
         );
 
-        var partnerIds = pagedResult
+        var allPartnerIds = allMessages
             .Items.Select(m => m.SenderId == userId ? m.ReceiverId!.Value : m.SenderId)
             .Distinct()
             .ToList();
 
+        var pagedPartnerIds = allPartnerIds.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
         return new PagedResponse<Guid>
         {
-            Items = partnerIds,
-            PageIndex = pagedResult.PageIndex,
-            PageSize = pagedResult.PageSize,
-            TotalRecords = partnerIds.Count,
-            TotalPages = (int)Math.Ceiling(partnerIds.Count / (double)pagedResult.PageSize),
-            HasNextPage = pagedResult.HasNextPage,
-            HasPreviousPage = pagedResult.HasPreviousPage
+            Items = pagedPartnerIds,
+            PageIndex = page,
+            PageSize = pageSize,
+            TotalRecords = allPartnerIds.Count,
+            TotalPages = (int)Math.Ceiling(allPartnerIds.Count / (double)pageSize),
+            HasNextPage = page * pageSize < allPartnerIds.Count,
+            HasPreviousPage = page > 1
         };
     }
 
@@ -173,64 +175,5 @@ public class ChatService : IChatService
         };
     }
 
-    public async Task<PagedResponse<ConversationDTO>> GetUserConversationsAsync(
-        Guid userId,
-        int pageNumber,
-        int pageSize
-    )
-    {
-        var result = new List<ConversationDTO>();
 
-        var partnerIds = await GetChatPartnersAsync(userId, pageNumber, pageSize);
-
-        foreach (var partnerId in partnerIds.Items)
-        {
-            var privateMessages = await GetPrivateMessagesAsync(userId, partnerId, 1, 1);
-            var lastMessage = privateMessages.Items.FirstOrDefault();
-            result.Add(
-                new ConversationDTO
-                {
-                    Type = ConversationType.Private,
-                    Id = partnerId,
-                    Name = string.Empty,
-                    LastMessage = lastMessage?.Content ?? string.Empty,
-                    Avatar = string.Empty,
-                    Timestamp = lastMessage?.Timestamp ?? DateTime.MinValue,
-                }
-            );
-        }
-
-        var groupChats = await GetUserChatRoomsAsync(userId, pageNumber, pageSize);
-
-        foreach (var chatRoom in groupChats.Items)
-        {
-            var lastMessage = chatRoom.Messages.Items.FirstOrDefault();
-            result.Add(
-                new ConversationDTO
-                {
-                    Type = ConversationType.Group,
-                    Id = chatRoom.Id,
-                    Name = chatRoom.Name,
-                    LastMessage = lastMessage?.Content ?? string.Empty,
-                    Avatar = string.Empty,
-                    Timestamp = lastMessage?.Timestamp ?? DateTime.MinValue,
-                }
-            );
-        }
-
-        // Sort by Timestamp DESC
-        result = result.OrderByDescending(c => c.Timestamp).ToList();
-        Console.WriteLine(result.Count);
-
-        // Pagination
-        var totalCount = result.Count;
-        var pagedItems = result.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
-        return new PagedResponse<ConversationDTO>
-        {
-            Items = pagedItems,
-            PageIndex = pageNumber,
-            PageSize = pageSize,
-            TotalRecords = totalCount
-        };
-    }
 }

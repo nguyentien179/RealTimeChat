@@ -59,20 +59,5 @@ namespace messaging.Presentation.Controllers
             );
             return Ok(groups);
         }
-
-        [HttpGet("conversations/{userId:guid}")]
-        public async Task<ActionResult<PagedResponse<ConversationDTO>>> GetConversations(
-            Guid userId,
-            [FromQuery] int pageIndex,
-            [FromQuery] int pageSize
-        )
-        {
-            var conversations = await _chatService.GetUserConversationsAsync(
-                userId,
-                pageNumber: pageIndex,
-                pageSize: pageSize
-            );
-            return Ok(conversations);
-        }
     }
 }
