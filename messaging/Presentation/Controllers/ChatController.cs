@@ -1,17 +1,22 @@
 using System.Reflection;
+using System.Security.Claims;
 using messaging.Application.Common;
 using messaging.Application.Interfaces;
 using messaging.Domain.DTOs.Chat;
 using messaging.Domain.DTOs.ChatRoom;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace messaging.Presentation.Controllers
 {
     [Route("chat")]
     [ApiController]
-    public class ChatController(IChatService chatService) : ControllerBase
+    public class ChatController(IChatService chatService, IHttpContextAccessor httpContextAccessor)
+        : ControllerBase
     {
         private readonly IChatService _chatService = chatService;
+        private readonly IHttpContextAccessor _httpContextaccessor = httpContextAccessor;
 
         [HttpGet("private")]
         public async Task<ActionResult<PagedResponse<MessageToReturnDTO>>> GetPrivateMessages(
@@ -24,7 +29,7 @@ namespace messaging.Presentation.Controllers
             var messages = await _chatService.GetPrivateMessagesAsync(
                 user1,
                 user2,
-                page: pageIndex,
+                pageIndex: pageIndex,
                 pageSize: pageSize
             );
             return Ok(messages);
@@ -58,6 +63,24 @@ namespace messaging.Presentation.Controllers
                 pageSize: pageSize
             );
             return Ok(groups);
+        }
+
+        [Authorize]
+        [HttpGet("unread-count")]
+        public async Task<IActionResult> GetUnreadMessagesCount()
+        {
+            var user = _httpContextaccessor.HttpContext?.User;
+
+            var userIdClaim = user?.FindFirst("UserId");
+            if (userIdClaim == null)
+            {
+                return Unauthorized();
+            }
+
+            Guid userId = Guid.Parse(userIdClaim.Value);
+            int count = await _chatService.CountUnreadMessagesAsync(userId);
+
+            return Ok(new { count });
         }
     }
 }

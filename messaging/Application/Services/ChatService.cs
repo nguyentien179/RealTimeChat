@@ -62,7 +62,7 @@ public class ChatService : IChatService
         return entity.ToReturnDTO();
     }
 
-    public Task<PagedResponse<MessageToReturnDTO>> GetPrivateMessagesAsync(
+    public async Task<PagedResponse<MessageToReturnDTO>> GetPrivateMessagesAsync(
         Guid user1,
         Guid user2,
         int pageIndex,
@@ -76,10 +76,47 @@ public class ChatService : IChatService
                 || (m.SenderId == user2 && m.ReceiverId == user1)
         };
 
-        return CreatePagedMessageResponse(filters, pageIndex, pageSize);
+        // Fetch paged messages
+        var pagedResult = await _chatRepository.GetAllAsync(
+            pageIndex,
+            pageSize,
+            filters,
+            m => m.OrderByDescending(m => m.Timestamp)
+        );
+
+        var messagesToMark = pagedResult
+            .Items.Where(m => m.ReceiverId == user1 && !m.IsRead)
+            .ToList();
+
+        foreach (var message in messagesToMark)
+        {
+            message.IsRead = true;
+        }
+
+        if (messagesToMark.Count > 0)
+        {
+            await _chatRepository.SaveChangesAsync();
+        }
+
+
+        // Return messages in chronological order
+        return new PagedResponse<MessageToReturnDTO>
+        {
+            Items = pagedResult.Items.OrderBy(m => m.Timestamp).Select(m => m.ToReturnDTO()),
+            PageIndex = pagedResult.PageIndex,
+            PageSize = pagedResult.PageSize,
+            TotalRecords = pagedResult.TotalRecords,
+            TotalPages = pagedResult.TotalPages,
+            HasNextPage = pagedResult.HasNextPage,
+            HasPreviousPage = pagedResult.HasPreviousPage
+        };
     }
 
-    public async Task<PagedResponse<Guid>> GetChatPartnersAsync(Guid userId, int page, int pageSize)
+    public async Task<PagedResponse<ChatPartnerDTO>> GetChatPartnersAsync(
+        Guid userId,
+        int page,
+        int pageSize
+    )
     {
         var filters = new List<Expression<Func<ChatMessage, bool>>>
         {
@@ -100,9 +137,32 @@ public class ChatService : IChatService
 
         var pagedPartnerIds = allPartnerIds.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-        return new PagedResponse<Guid>
+        // Now for each partner → find the latest message between userId and that partner
+        var partnerDtos = pagedPartnerIds
+            .Select(partnerId =>
+            {
+                var lastMessage = allMessages
+                    .Items.Where(m =>
+                        (m.SenderId == userId && m.ReceiverId == partnerId)
+                        || (m.SenderId == partnerId && m.ReceiverId == userId)
+                    )
+                    .OrderByDescending(m => m.Timestamp)
+                    .FirstOrDefault();
+                bool hasUnreadMessage = !lastMessage!.IsRead;
+
+                return new ChatPartnerDTO
+                {
+                    PartnerId = partnerId,
+                    LastMessage = lastMessage?.Content,
+                    Timestamp = lastMessage?.Timestamp,
+                    HaveUnread = hasUnreadMessage
+                };
+            })
+            .ToList();
+
+        return new PagedResponse<ChatPartnerDTO>
         {
-            Items = pagedPartnerIds,
+            Items = partnerDtos,
             PageIndex = page,
             PageSize = pageSize,
             TotalRecords = allPartnerIds.Count,
@@ -150,30 +210,29 @@ public class ChatService : IChatService
         };
     }
 
-    private async Task<PagedResponse<MessageToReturnDTO>> CreatePagedMessageResponse(
-        List<Expression<Func<ChatMessage, bool>>> filters,
-        int pageIndex,
-        int pageSize
+    public async Task<int> CountUnreadMessagesAsync(
+        Guid userId,
+        Guid? chatPartnerId = null,
+        Guid? chatRoomId = null
     )
     {
-        var pagedResult = await _chatRepository.GetAllAsync(
-            pageIndex,
-            pageSize,
-            filters,
-            m => m.OrderByDescending(m => m.Timestamp)
-        );
-
-        return new PagedResponse<MessageToReturnDTO>
+        var filters = new List<Expression<Func<ChatMessage, bool>>>
         {
-            Items = pagedResult.Items.OrderBy(m => m.Timestamp).Select(m => m.ToReturnDTO()),
-            PageIndex = pagedResult.PageIndex,
-            PageSize = pagedResult.PageSize,
-            TotalRecords = pagedResult.TotalRecords,
-            TotalPages = pagedResult.TotalPages,
-            HasNextPage = pagedResult.HasNextPage,
-            HasPreviousPage = pagedResult.HasPreviousPage
+            m => !m.IsRead && m.ReceiverId == userId
         };
+
+        if (chatPartnerId.HasValue)
+        {
+            filters.Add(m => m.SenderId == chatPartnerId.Value);
+        }
+
+        if (chatRoomId.HasValue)
+        {
+            filters.Clear(); // In chat rooms there is no receiverId
+            filters.Add(m => !m.IsRead && m.ChatRoomId == chatRoomId.Value && m.SenderId != userId);
+        }
+
+        var unreadMessages = await _chatRepository.CountAsync(filters);
+        return unreadMessages;
     }
-
-
 }

@@ -36,6 +36,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSignalR(options =>
 {

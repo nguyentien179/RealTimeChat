@@ -34,6 +34,7 @@ public interface IGenericRepository<T>
     public void Update(T entity);
     public void Delete(T entity);
     public Task SaveChangesAsync();
+    public Task<int> CountAsync(List<Expression<Func<T, bool>>> filters);
 
     public Task<IDbContextTransaction> BeginTransactionAsync();
 }

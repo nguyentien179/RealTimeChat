@@ -115,6 +115,20 @@ public class GenericRepository<T> : IGenericRepository<T>
     {
         await _context.SaveChangesAsync();
     }
+    public async Task<int> CountAsync(List<Expression<Func<T, bool>>> filters)
+    {
+        IQueryable<T> query = _dbSet;
+
+        if (filters != null)
+        {
+            foreach (var filter in filters)
+            {
+                query = query.Where(filter);
+            }
+        }
+
+        return await query.CountAsync();
+    }
 
     public async Task<IDbContextTransaction> BeginTransactionAsync()
     {
