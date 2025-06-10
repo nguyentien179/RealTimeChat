@@ -13,5 +13,5 @@ public class MessageToReturnDTO
 
     public string Content { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
-    public IEnumerable<Guid>? SeenBy { get; set; } // Read receipts
+    public bool IsRead { get; set; }
 }

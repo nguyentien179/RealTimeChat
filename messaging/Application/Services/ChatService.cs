@@ -83,10 +83,7 @@ public class ChatService : IChatService
             filters,
             m => m.OrderByDescending(m => m.Timestamp)
         );
-
-        var messagesToMark = pagedResult
-            .Items.Where(m => m.ReceiverId == user1 && !m.IsRead)
-            .ToList();
+        var messagesToMark = pagedResult.Items.Where(m => !m.IsRead).ToList();
 
         foreach (var message in messagesToMark)
         {
@@ -97,7 +94,6 @@ public class ChatService : IChatService
         {
             await _chatRepository.SaveChangesAsync();
         }
-
 
         // Return messages in chronological order
         return new PagedResponse<MessageToReturnDTO>
@@ -138,8 +134,8 @@ public class ChatService : IChatService
         var pagedPartnerIds = allPartnerIds.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         // Now for each partner → find the latest message between userId and that partner
-        var partnerDtos = pagedPartnerIds
-            .Select(partnerId =>
+        var partnerDtos = await Task.WhenAll(
+            pagedPartnerIds.Select(async partnerId =>
             {
                 var lastMessage = allMessages
                     .Items.Where(m =>
@@ -148,17 +144,18 @@ public class ChatService : IChatService
                     )
                     .OrderByDescending(m => m.Timestamp)
                     .FirstOrDefault();
-                bool hasUnreadMessage = !lastMessage!.IsRead;
+
+                var unreadCount = await CountUnreadMessagesAsync(userId, chatPartnerId: partnerId);
 
                 return new ChatPartnerDTO
                 {
                     PartnerId = partnerId,
                     LastMessage = lastMessage?.Content,
                     Timestamp = lastMessage?.Timestamp,
-                    HaveUnread = hasUnreadMessage
+                    UnreadCount = unreadCount
                 };
             })
-            .ToList();
+        );
 
         return new PagedResponse<ChatPartnerDTO>
         {

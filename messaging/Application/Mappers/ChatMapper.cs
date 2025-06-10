@@ -31,6 +31,7 @@ public static class ChatMapper
             ChatRoomName = message.ChatRoom?.Name,
             Content = message.Content,
             Timestamp = message.Timestamp,
+            IsRead = message.IsRead
         };
     }
 }

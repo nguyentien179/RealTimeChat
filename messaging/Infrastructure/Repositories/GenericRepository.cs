@@ -28,7 +28,7 @@ public class GenericRepository<T> : IGenericRepository<T>
         Func<IQueryable<T>, IIncludableQueryable<T, object?>>? include = null
     )
     {
-        var query = _dbSet.AsQueryable();
+        var query = _dbSet.AsTracking().AsQueryable();
 
         if (filters != null)
         {
