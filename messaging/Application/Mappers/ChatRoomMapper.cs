@@ -52,9 +52,14 @@ public static class ChatRoomMapper
                 PageIndex = paging.PageNumber,
                 PageSize = paging.PageSize,
                 TotalRecords = totalCount,
-                TotalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / paging.PageSize),
+                TotalPages =
+                    totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / paging.PageSize),
                 HasPreviousPage = totalCount == 0 ? false : paging.PageNumber > 1,
-                HasNextPage = totalCount == 0 ? false : paging.PageNumber < (int)Math.Ceiling((double)totalCount / paging.PageSize)
+                HasNextPage =
+                    totalCount == 0
+                        ? false
+                        : paging.PageNumber
+                            < (int)Math.Ceiling((double)totalCount / paging.PageSize)
             }
         };
     }

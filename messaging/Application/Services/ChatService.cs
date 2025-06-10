@@ -134,28 +134,30 @@ public class ChatService : IChatService
         var pagedPartnerIds = allPartnerIds.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         // Now for each partner → find the latest message between userId and that partner
-        var partnerDtos = await Task.WhenAll(
-            pagedPartnerIds.Select(async partnerId =>
-            {
-                var lastMessage = allMessages
-                    .Items.Where(m =>
-                        (m.SenderId == userId && m.ReceiverId == partnerId)
-                        || (m.SenderId == partnerId && m.ReceiverId == userId)
-                    )
-                    .OrderByDescending(m => m.Timestamp)
-                    .FirstOrDefault();
+        var partnerDtos = new List<ChatPartnerDTO>();
 
-                var unreadCount = await CountUnreadMessagesAsync(userId, chatPartnerId: partnerId);
+        foreach (var partnerId in pagedPartnerIds)
+        {
+            var lastMessage = allMessages
+                .Items.Where(m =>
+                    (m.SenderId == userId && m.ReceiverId == partnerId)
+                    || (m.SenderId == partnerId && m.ReceiverId == userId)
+                )
+                .OrderByDescending(m => m.Timestamp)
+                .FirstOrDefault();
 
-                return new ChatPartnerDTO
+            var unreadCount = await CountUnreadMessagesAsync(userId, chatPartnerId: partnerId);
+
+            partnerDtos.Add(
+                new ChatPartnerDTO
                 {
                     PartnerId = partnerId,
                     LastMessage = lastMessage?.Content,
                     Timestamp = lastMessage?.Timestamp,
                     UnreadCount = unreadCount
-                };
-            })
-        );
+                }
+            );
+        }
 
         return new PagedResponse<ChatPartnerDTO>
         {
