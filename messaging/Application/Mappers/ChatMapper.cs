@@ -15,7 +15,8 @@ public static class ChatMapper
             ReceiverId = dto.ReceiverId,
             ChatRoomId = dto.ChatRoomId,
             Content = dto.Content,
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
+            IsRead = false
         };
     }
 

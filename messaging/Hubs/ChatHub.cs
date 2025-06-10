@@ -38,4 +38,9 @@ public class ChatHub(IChatService chatService, IChatRoomService chatRoomService)
         Console.WriteLine($"Client connected: ConnectionId={Context.ConnectionId}, UserId={userId}");
         return base.OnConnectedAsync();
     }
+    public async Task NotifyUnreadCountChanged(Guid userId)
+    {
+        var unreadCount = await _chatService.CountUnreadMessagesAsync(userId);
+        await Clients.User(userId.ToString()).SendAsync("UnreadCountUpdated", unreadCount);
+    }
 }
